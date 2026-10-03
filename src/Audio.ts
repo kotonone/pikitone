@@ -1,5 +1,24 @@
 import { context, wait } from "./utils";
 
+/**
+ * 指定時刻以降の変更を取り消して値を保持します。
+ * @param param 取り消し対象
+ * @param cancelTime 取り消し開始時刻
+ */
+function cancelAndHold(param: AudioParam, cancelTime: number): void {
+    // NOTE: 厳密な仕様反映をしていないので、export したり新しく使用する際には注意
+
+    const candidate = param as AudioParam & { cancelAndHoldAtTime?: unknown };
+    if (typeof candidate.cancelAndHoldAtTime === "function") {
+        (candidate.cancelAndHoldAtTime as (time: number) => void)(cancelTime);
+        return;
+    }
+
+    // NOTE: cancelScheduledValues は補完を取り消すので、setValueAtTime で値を保持させる。この間でグリッチが発生する可能性が少しだけある
+    param.cancelScheduledValues(cancelTime);
+    param.setValueAtTime(param.value, cancelTime);
+}
+
 /** {@link Audio} のオプション */
 export interface AudioOptions {
     /** この音源がループ再生されるかどうか */
@@ -74,7 +93,7 @@ export class Audio extends EventTarget implements AudioOptions {
 
         const endTime = context.currentTime + duration;
 
-        this.masterGain.gain.cancelAndHoldAtTime(context.currentTime);
+        cancelAndHold(this.masterGain.gain, context.currentTime);
         this.masterGain.gain.value = _from;
         if (exponential) {
             this.masterGain.gain.exponentialRampToValueAtTime(_to, endTime);
