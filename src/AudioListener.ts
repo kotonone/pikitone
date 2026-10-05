@@ -1,4 +1,4 @@
-import { context } from "./utils";
+import { getContext } from "./utils";
 import { Audio } from "./Audio";
 
 /** {@link AudioListener} のオプション */
@@ -37,16 +37,16 @@ export class AudioListener<M extends Record<string, Audio>> {
             maxPolyphony: 4,
             ...options,
         };
-        this.rootNode = context.createGain();
+        this.rootNode = getContext().createGain();
         this.categories = categories;
         this.#bgm = null;
         this.#threads = new Set();
 
-        this.rootNode.connect(context.destination);
+        this.rootNode.connect(getContext().destination);
 
         // NOTE: カテゴリ用の GainNode を作成
         for (const category of this.options.categories) {
-            const gainNode = context.createGain();
+            const gainNode = getContext().createGain();
             categories.set(category, gainNode);
             gainNode.connect(this.rootNode);
         }

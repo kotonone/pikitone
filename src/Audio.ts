@@ -1,4 +1,4 @@
-import { context, wait } from "./utils";
+import { getContext, wait } from "./utils";
 
 /**
  * 指定時刻以降の変更を取り消して値を保持します。
@@ -62,8 +62,8 @@ export class Audio extends EventTarget implements AudioOptions {
         super();
         this.startAt = 0;
 
-        this.masterGain = context.createGain();
-        this.userGain = context.createGain();
+        this.masterGain = getContext().createGain();
+        this.userGain = getContext().createGain();
         this.buffer = buffer;
         this.source = this.#createSource();
         this.#isUsedSource = false;
@@ -81,7 +81,7 @@ export class Audio extends EventTarget implements AudioOptions {
     }
 
     #createSource(): AudioBufferSourceNode {
-        const source = context.createBufferSource();
+        const source = getContext().createBufferSource();
         source.buffer = this.buffer;
         source.connect(this.userGain);
         return source;
@@ -91,9 +91,9 @@ export class Audio extends EventTarget implements AudioOptions {
         const _from = from === 0 ? 0.0001 : from;
         const _to = to === 0 ? 0.0001 : to;
 
-        const endTime = context.currentTime + duration;
+        const endTime = getContext().currentTime + duration;
 
-        cancelAndHold(this.masterGain.gain, context.currentTime);
+        cancelAndHold(this.masterGain.gain, getContext().currentTime);
         this.masterGain.gain.value = _from;
         if (exponential) {
             this.masterGain.gain.exponentialRampToValueAtTime(_to, endTime);
@@ -149,7 +149,7 @@ export class Audio extends EventTarget implements AudioOptions {
 
     /** この音源の現在位置 */
     public get currentTime(): number {
-        return context.currentTime - (this.#startAtAsContextTime ?? context.currentTime);
+        return getContext().currentTime - (this.#startAtAsContextTime ?? getContext().currentTime);
     }
 
     /**
@@ -176,11 +176,11 @@ export class Audio extends EventTarget implements AudioOptions {
 
         // NOTE: 開始位置の計算や記録
         const startAt = this.#pausedAt ?? this.startAt;
-        this.#startAtAsContextTime = context.currentTime - startAt;
+        this.#startAtAsContextTime = getContext().currentTime - startAt;
 
         // NOTE: 再生
         this.source.onended = () => this.#onEnded();
-        this.source.start(context.currentTime, startAt);
+        this.source.start(getContext().currentTime, startAt);
         this.#isUsedSource = true;
 
         // NOTE: フェードイン
@@ -205,7 +205,7 @@ export class Audio extends EventTarget implements AudioOptions {
         if (!this.#isPlaying) return;
 
         // NOTE: 一時停止位置を記録
-        this.#pausedAt = context.currentTime - (this.#startAtAsContextTime ?? 0);
+        this.#pausedAt = getContext().currentTime - (this.#startAtAsContextTime ?? 0);
 
         // NOTE: フェードアウト
         const promiseOrVoid = this.#changeVolume(1, 0, animationDuration ?? 0, exponential ?? false);

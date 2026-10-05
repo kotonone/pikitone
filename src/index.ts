@@ -1,3 +1,3 @@
 export * from "./Audio";
 export * from "./AudioListener";
-export { decodeAudioData } from "./utils";
+export { decodeAudioData, getContext } from "./utils";

@@ -4,17 +4,22 @@ declare global {
     }
 }
 
+let sharedContext: AudioContext | null = null;
+
 /**
- * pancake-sound 内で利用されるコンテキスト
+ * 共有 AudioContext を取得します。初回呼び出し時に生成します。
  */
-export const context = new (window.AudioContext || window.webkitAudioContext)();
+export function getContext(): AudioContext {
+    sharedContext ??= new (window.AudioContext || window.webkitAudioContext)();
+    return sharedContext;
+}
 
 /**
  * 指定された音声データをデコードします。
  * @param audioData 音声データ
  */
 export async function decodeAudioData(audioData: ArrayBuffer): Promise<AudioBuffer> {
-    return await context.decodeAudioData(audioData);
+    return await getContext().decodeAudioData(audioData);
 }
 
 /**
