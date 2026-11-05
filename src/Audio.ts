@@ -80,10 +80,18 @@ export class Audio extends EventTarget implements AudioOptions {
         this.startAt = options?.startAt ?? 0;
     }
 
-    #createSource(): AudioBufferSourceNode {
+    #createSource(previous?: AudioBufferSourceNode): AudioBufferSourceNode {
         const source = getContext().createBufferSource();
         source.buffer = this.buffer;
         source.connect(this.userGain);
+
+        // NOTE: AudioBufferSourceNode は start が1回限りのため、2回目以降の再生ではノードを作り直す。前回のノードに設定したループと離調を引き継ぐ
+        if (previous) {
+            source.loop = previous.loop;
+            source.loopStart = previous.loopStart;
+            source.loopEnd = previous.loopEnd;
+            source.detune.value = previous.detune.value;
+        }
         return source;
     }
     async #changeVolume(from: number, to: number, duration: number, exponential: boolean): Promise<void> {
@@ -172,7 +180,7 @@ export class Audio extends EventTarget implements AudioOptions {
     public play(animationDuration: number, exponential?: boolean): Promise<void>;
     public play(animationDuration?: number, exponential?: boolean): void | Promise<void> {
         if (this.#isPlaying) return;
-        if (this.#isUsedSource) this.source = this.#createSource();
+        if (this.#isUsedSource) this.source = this.#createSource(this.source);
 
         // NOTE: 開始位置の計算や記録
         const startAt = this.#pausedAt ?? this.startAt;
